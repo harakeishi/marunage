@@ -91,7 +91,13 @@ func newInstalledSkillsAPIHandler(cfg SkillsConfig) http.Handler {
 			http.Error(w, fmt.Sprintf("skills: %v", err), http.StatusInternalServerError)
 			return
 		}
-		writeJSON(w, http.StatusOK, installedSkillsResponse{Skills: state.Installed})
+		// Marshal nil slices as `[]` so JS `.length` and `.map` on the
+		// client side work without per-field null guards.
+		skills := state.Installed
+		if skills == nil {
+			skills = []registry.InstalledSkill{}
+		}
+		writeJSON(w, http.StatusOK, installedSkillsResponse{Skills: skills})
 	})
 }
 
@@ -119,6 +125,9 @@ func newRegistrySearchAPIHandler(cfg SkillsConfig) http.Handler {
 			return
 		}
 		hits := registry.Search(idx, r.URL.Query().Get("q"))
+		if hits == nil {
+			hits = []registry.IndexEntry{}
+		}
 		writeJSON(w, http.StatusOK, registryResponse{Skills: hits})
 	})
 }

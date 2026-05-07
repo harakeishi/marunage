@@ -89,7 +89,7 @@ export async function getSkippedTasks(): Promise<Task[]> {
 export async function getInstalledSkills(): Promise<SkillInfo[]> {
   if (USE_MOCK) return (await import('./mock')).mockSkillsInstalled
   const resp = await apiFetch<InstalledSkillsResponse>('/api/skills/installed')
-  return resp.skills
+  return resp.skills ?? []
 }
 
 export async function searchSkillsRegistry(q: string): Promise<SkillRegistryEntry[]> {
@@ -100,7 +100,7 @@ export async function searchSkillsRegistry(q: string): Promise<SkillRegistryEntr
     )
   }
   const resp = await apiFetch<SkillRegistryResponse>(`/api/skills/registry?q=${encodeURIComponent(q)}`)
-  return resp.skills
+  return resp.skills ?? []
 }
 
 export async function addTask(data: {
