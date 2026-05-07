@@ -133,9 +133,14 @@ func newTestPostHandler() http.Handler {
 
 // securityHeaders wraps next, adding the baseline headers PR-62
 // promises (X-Content-Type-Options / X-Frame-Options / a strict CSP).
-// HTMX needs script-src 'unsafe-inline' for its hx-on attributes; we
-// intentionally do NOT allow that here since the placeholder page
-// ships without HTMX — PR-63 can relax CSP if it actually needs it.
+//
+// The Next.js static export ships inline <script> blobs that carry the
+// React Server Components payload (`self.__next_f.push(...)`) and
+// inline <style> blocks that define the Geist font CSS variables.
+// Without 'unsafe-inline' the browser refuses to execute the RSC
+// hydration, leaving every page stuck on the loading spinner. Static
+// export has no server-side hook to inject a per-request nonce, so
+// 'unsafe-inline' is the supported escape hatch.
 func securityHeaders(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("X-Content-Type-Options", "nosniff")
@@ -144,8 +149,8 @@ func securityHeaders(next http.Handler) http.Handler {
 		w.Header().Set("Content-Security-Policy",
 			"default-src 'self'; "+
 				"img-src 'self' data:; "+
-				"style-src 'self'; "+
-				"script-src 'self'; "+
+				"style-src 'self' 'unsafe-inline'; "+
+				"script-src 'self' 'unsafe-inline'; "+
 				"connect-src 'self'; "+
 				"object-src 'none'; "+
 				"form-action 'self'; "+
